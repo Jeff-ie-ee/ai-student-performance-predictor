@@ -1,237 +1,179 @@
-# 🎓 AI Student Performance Predictor
+# AI Student Performance Predictor
 
-An end-to-end **Machine Learning web application** that predicts student academic performance based on academic and behavioral factors.
+An end-to-end Machine Learning web application that predicts student academic performance using student academic, family, and behavioral information.
 
-The project combines **Python, Machine Learning, Pandas, Scikit-learn, and Streamlit** to provide an interactive prediction interface.
+The project uses **Python, Pandas, Scikit-learn, Streamlit, and FastAPI** to provide an interactive dashboard and a prediction API.
 
----
+## Features
 
-## 🚀 Features
+- Predict student performance on a scale of 0â€“20.
+- Interactive Streamlit dashboard.
+- FastAPI REST API for predictions.
+- Machine learning pipeline for processing student information.
+- Performance categories: Excellent, Good, Average, and Needs Improvement.
+- Risk categories: Low, Medium, and High.
+- Separate model training, prediction, and application components.
 
-* 📊 Student performance prediction using Machine Learning
-* 🤖 Trained ML model saved as a `.pkl` file
-* 🧠 Automated prediction pipeline
-* 🌐 Interactive Streamlit web interface
-* 📈 Student performance analysis
-* ⚡ Fast local predictions
-* 🧩 Modular project structure
-* 🔄 Separate training and prediction scripts
+> **Note:** Predictions are estimates from a machine learning model and should not be used as the sole basis for academic decisions.
 
----
+## Tech Stack
 
-## 🛠️ Tech Stack
+| Technology | Purpose |
+|---|---|
+| Python | Core programming language |
+| Pandas | Data processing |
+| NumPy | Numerical operations |
+| Scikit-learn | Machine learning pipeline |
+| Streamlit | Interactive dashboard |
+| FastAPI | Prediction API |
+| Uvicorn | API server |
+| Joblib | Saving and loading the trained model |
+| Git and GitHub | Version control |
 
-| Technology    | Purpose                   |
-| ------------- | ------------------------- |
-| Python        | Core programming language |
-| Pandas        | Data processing           |
-| NumPy         | Numerical operations      |
-| Scikit-learn  | Machine Learning          |
-| Streamlit     | Web application           |
-| Joblib/Pickle | Model serialization       |
-| Git & GitHub  | Version control           |
-
----
-
-## 🧠 Machine Learning Workflow
+## Machine Learning Workflow
 
 ```text
 Student Dataset
-      ↓
+      |
 Data Preprocessing
-      ↓
+      |
 Feature Selection
-      ↓
-Train/Test Split
-      ↓
-Model Training
-      ↓
-Model Evaluation
-      ↓
-Save Trained Model
-      ↓
-Streamlit Application
-      ↓
-Student Input
-      ↓
-Performance Prediction
+      |
+Model Training and Evaluation
+      |
+Saved ML Pipeline
+      |
+FastAPI Prediction Endpoint
+      |
+Streamlit Dashboard
+      |
+Predicted Student Performance
 ```
 
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```text
 ai-student-performance-predictor/
-│
-├── app.py
-├── train_model.py
-├── predict.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-│
-├── models/
-│   └── student_performance_model.pkl
-│
-└── frontend/
-    └── ...
+â”œâ”€â”€ app.py
+â”œâ”€â”€ main.py
+â”œâ”€â”€ train_model.py
+â”œâ”€â”€ predict.py
+â”œâ”€â”€ requirements.txt
+â”œâ”€â”€ README.md
+â”œâ”€â”€ backend/
+â”‚   â”œâ”€â”€ app.py
+â”‚   â”œâ”€â”€ main.py
+â”‚   â”œâ”€â”€ requirements.txt
+â”‚   â””â”€â”€ student_performance_pipeline.pkl
+â”œâ”€â”€ data/
+â”‚   â””â”€â”€ student-mat.csv
+â”œâ”€â”€ models/
+â”‚   â””â”€â”€ student_performance_model.pkl
+â”œâ”€â”€ notebooks/
+â”œâ”€â”€ research/
+â””â”€â”€ src/
 ```
 
----
-
-## ⚙️ Installation
+## Installation
 
 ### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Jeff-ie-ee/ai-student-performance-predictor.git
-```
-
-### 2. Navigate to the project
-
-```bash
 cd ai-student-performance-predictor
 ```
 
-### 3. Create a virtual environment
+### 2. Create and activate a virtual environment
 
-```bash
-python -m venv .venv
-```
-
-### 4. Activate the environment
-
-**Windows PowerShell:**
+Windows PowerShell:
 
 ```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 5. Install dependencies
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+## Running the Application
 
-## ▶️ Running the Project
+Open two terminals in the project directory and activate the virtual environment in each.
 
-### Train the model
+### Terminal 1: Start the FastAPI backend
 
 ```bash
-python train_model.py
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-This trains the Machine Learning model and saves the trained model inside:
+API documentation:
 
 ```text
-models/student_performance_model.pkl
+http://127.0.0.1:8000/docs
 ```
 
-### Test prediction
+Health check:
 
-```bash
-python predict.py
+```text
+http://127.0.0.1:8000/health
 ```
 
-### Launch the Streamlit application
+### Terminal 2: Start the Streamlit dashboard
 
 ```bash
 python -m streamlit run app.py
 ```
 
-The application will open in your browser.
+The dashboard communicates with the local API at `http://127.0.0.1:8000/predict`.
 
----
+Start the backend before making predictions through the dashboard.
 
-## 📊 Prediction Pipeline
+## API Endpoints
 
-The application accepts relevant student information as input and passes it through the trained Machine Learning model.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/` | API information |
+| GET | `/health` | Check API health |
+| POST | `/predict` | Predict student performance |
 
-```text
-User Input
-    ↓
-Input Validation
-    ↓
-Feature Processing
-    ↓
-Trained ML Model
-    ↓
-Prediction
-    ↓
-Performance Result
-```
+You can test the API interactively using the Swagger documentation at `/docs`.
 
----
+## Prediction Results
 
-## 🎯 Project Objective
+The API returns a predicted grade, a performance category, and a risk category. The categories are determined by thresholds defined in the application.
 
-The main objective of this project is to demonstrate how Machine Learning can be applied to **educational data** to identify patterns and predict student academic performance.
+These results are estimates and do not guarantee a student's actual academic outcome.
 
-Such systems can potentially help educators identify students who may require additional academic support.
+## Dataset
 
----
+The project includes a student mathematics performance dataset named `student-mat.csv`. The application uses selected student attributes as model inputs.
 
-## 🔮 Future Improvements
+## Skills Demonstrated
 
-* 📈 Add interactive performance dashboards
-* 📊 Add feature-importance visualization
-* 🧠 Compare multiple ML algorithms
-* 🎯 Improve prediction accuracy
-* 👨‍🎓 Add student performance categories
-* 📋 Add downloadable prediction reports
-* ☁️ Deploy the application to the cloud
-* 🔐 Add authentication
-* 🗄️ Add database support
-* 📱 Improve mobile responsiveness
+- Python programming
+- Data preprocessing and feature selection
+- Machine learning pipelines
+- Model training and serialization
+- REST API development with FastAPI
+- Interactive applications with Streamlit
+- Git and GitHub
+- Integrating a trained model into a web application
 
----
+## Future Improvements
 
-## 📸 Screenshots
+- Add feature-importance visualizations.
+- Compare multiple machine learning algorithms.
+- Improve validation and evaluation reporting.
+- Add downloadable prediction reports.
+- Deploy the application to a cloud platform.
+- Add automated tests and continuous integration.
+- Improve dashboard accessibility and mobile responsiveness.
 
-Add screenshots of the Streamlit application here after completing the UI.
-
-```text
-screenshots/
-├── home.png
-├── prediction.png
-└── results.png
-```
-
----
-
-## 💡 Skills Demonstrated
-
-This project demonstrates practical experience with:
-
-* Python Programming
-* Data Preprocessing
-* Exploratory Data Analysis
-* Machine Learning
-* Model Training
-* Model Evaluation
-* Model Serialization
-* Streamlit
-* Git & GitHub
-* End-to-End ML Application Development
-
----
-
-## 👨‍💻 Author
+## Author
 
 **Jeffrin John**
+BSc Computer Applications | Aspiring AI/ML Engineer
 
-BSc Computer Applications
-Aspiring AI Engineer
-
-GitHub: `Jeff-ie-ee`
-
----
-
-## ⭐ Project Status
-
-**Status:** 🚧 Active Development
-
-The core Machine Learning pipeline and Streamlit application are implemented. UI improvements, documentation, testing, and deployment can be added as the project evolves.
+GitHub: [Jeff-ie-ee](https://github.com/Jeff-ie-ee)

@@ -1,24 +1,17 @@
 import streamlit as st
-import pandas as pd
-import joblib
+import requests
+import time
 
 
 # ============================================================
-# LOAD TRAINED MODEL AND METRICS
-# ============================================================
-
-model = joblib.load("student_performance_pipeline.pkl")
-metrics = joblib.load("model_metrics.pkl")
-
-
-# ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
     page_title="AI Student Performance Predictor",
     page_icon="🎓",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
@@ -30,25 +23,215 @@ st.markdown(
     """
     <style>
 
-    .main-title {
-        font-size: 42px;
-        font-weight: 700;
-        text-align: center;
+    /* ---------- GLOBAL ---------- */
+
+    .stApp {
+        background:
+            radial-gradient(circle at 10% 10%, rgba(99,102,241,0.10), transparent 30%),
+            radial-gradient(circle at 90% 20%, rgba(14,165,233,0.08), transparent 30%),
+            #f8fafc;
+    }
+
+    .block-container {
+        max-width: 1400px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    /* ---------- HEADER ---------- */
+
+    .hero {
+        padding: 35px 35px 30px 35px;
+        border-radius: 24px;
+        background: linear-gradient(
+            135deg,
+            #111827 0%,
+            #1e293b 55%,
+            #312e81 100%
+        );
+        color: white;
+        box-shadow: 0 15px 40px rgba(15, 23, 42, 0.20);
+        margin-bottom: 25px;
+        animation: fadeIn 0.8s ease-in-out;
+    }
+
+    .hero-title {
+        font-size: 44px;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin-bottom: 8px;
+    }
+
+    .hero-subtitle {
+        font-size: 17px;
+        color: #cbd5e1;
+        line-height: 1.6;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.18);
+        font-size: 13px;
+        margin-bottom: 15px;
+    }
+
+    /* ---------- SECTION HEADERS ---------- */
+
+    .section-title {
+        font-size: 25px;
+        font-weight: 750;
+        color: #111827;
+        margin-top: 10px;
         margin-bottom: 5px;
     }
 
-    .subtitle {
-        text-align: center;
-        color: #666;
-        font-size: 18px;
-        margin-bottom: 30px;
+    .section-description {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 18px;
     }
 
+    /* ---------- CARDS ---------- */
+
+    .info-card {
+        background: rgba(255,255,255,0.85);
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 8px 25px rgba(15,23,42,0.06);
+        transition: all 0.25s ease;
+        height: 100%;
+    }
+
+    .info-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 30px rgba(15,23,42,0.10);
+    }
+
+    /* ---------- RESULT ---------- */
+
+    .result-card {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 25px;
+        box-shadow: 0 12px 35px rgba(15,23,42,0.08);
+        text-align: center;
+        animation: slideUp 0.7s ease;
+    }
+
+    .result-number {
+        font-size: 42px;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .result-label {
+        font-size: 14px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .performance-badge {
+        display: inline-block;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-weight: 700;
+        margin-top: 8px;
+    }
+
+    .risk-badge {
+        display: inline-block;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-weight: 700;
+        margin-top: 8px;
+    }
+
+    /* ---------- RECOMMENDATION ---------- */
+
     .recommendation {
-        padding: 12px;
-        margin: 8px 0;
-        border-radius: 10px;
-        background-color: #f5f5f5;
+        background: white;
+        border-left: 5px solid #6366f1;
+        border-radius: 12px;
+        padding: 15px 18px;
+        margin: 10px 0;
+        box-shadow: 0 5px 18px rgba(15,23,42,0.05);
+        animation: fadeIn 0.5s ease;
+    }
+
+    .recommendation-title {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+    }
+
+    .recommendation-text {
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    /* ---------- FOOTER ---------- */
+
+    .footer {
+        text-align: center;
+        padding: 30px 10px 10px;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    /* ---------- BUTTON ---------- */
+
+    .stButton > button,
+    .stFormSubmitButton > button {
+        border-radius: 12px;
+        font-weight: 700;
+        min-height: 50px;
+        transition: all 0.25s ease;
+    }
+
+    .stButton > button:hover,
+    .stFormSubmitButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(79,70,229,0.20);
+    }
+
+    /* ---------- ANIMATIONS ---------- */
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.03);
+        }
+        100% {
+            transform: scale(1);
+        }
     }
 
     </style>
@@ -58,695 +241,1186 @@ st.markdown(
 
 
 # ============================================================
-# HEADER
+# SIDEBAR
+# ============================================================
+
+with st.sidebar:
+
+    st.markdown("## 🎓 AI Predictor")
+
+    st.markdown(
+        """
+        <div style="
+            padding:15px;
+            border-radius:15px;
+            background:#f1f5f9;
+            margin-bottom:20px;
+        ">
+        <b>About this system</b><br><br>
+        This application uses a Machine Learning model
+        to estimate a student's final academic performance
+        based on academic, demographic and lifestyle factors.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### 📊 Model")
+
+    st.info(
+        "Machine Learning Pipeline\n\n"
+        "The prediction is generated through the FastAPI backend."
+    )
+
+    st.markdown("### ⚡ API Status")
+
+    try:
+        health_check = requests.get(
+            "http://127.0.0.1:8000/",
+            timeout=2
+        )
+
+        if health_check.status_code == 200:
+            st.success("Backend Online")
+        else:
+            st.warning("Backend Responding")
+
+    except requests.exceptions.RequestException:
+        st.error("Backend Offline")
+
+    st.markdown("---")
+
+    st.caption("AI Student Performance Predictor")
+    st.caption("Academic Performance Analysis System")
+
+
+# ============================================================
+# HERO HEADER
 # ============================================================
 
 st.markdown(
-    '<div class="main-title">🎓 AI Student Performance Predictor</div>',
+    """
+    <div class="hero">
+
+        <div class="hero-badge">
+            MACHINE LEARNING • ACADEMIC ANALYTICS
+        </div>
+
+        <div class="hero-title">
+            🎓 AI Student Performance Predictor
+        </div>
+
+        <div class="hero-subtitle">
+            Predict final academic performance using
+            student academic, demographic and lifestyle information.
+        </div>
+
+    </div>
+    """,
     unsafe_allow_html=True
 )
+
+
+# ============================================================
+# INTRODUCTION
+# ============================================================
 
 st.markdown(
-    '<div class="subtitle">'
-    'Machine Learning powered academic performance prediction'
-    '</div>',
+    """
+    <div class="section-title">
+        Student Assessment
+    </div>
+
+    <div class="section-description">
+        Enter the student's information below and let the trained
+        Machine Learning model estimate the final grade.
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
-st.divider()
-
 
 # ============================================================
-# STUDENT INFORMATION
+# FORM
 # ============================================================
 
-st.header("👨‍🎓 Student Information")
+with st.form("student_form"):
 
-col1, col2, col3 = st.columns(3)
+    # ========================================================
+    # STUDENT INFORMATION
+    # ========================================================
 
-
-with col1:
-
-    school = st.selectbox(
-        "School",
-        ["GP", "MS"]
+    st.markdown(
+        """
+        <div class="section-title">👤 Student Information</div>
+        <div class="section-description">
+        Basic demographic and family information
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    sex = st.selectbox(
-        "Sex",
-        ["F", "M"]
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        school = st.selectbox(
+            "School",
+            ["GP", "MS"]
+        )
+
+        sex = st.selectbox(
+            "Sex",
+            ["M", "F"]
+        )
+
+        age = st.number_input(
+            "Age",
+            min_value=15,
+            max_value=25,
+            value=18
+        )
+
+        address = st.selectbox(
+            "Address",
+            ["U", "R"],
+            help="U = Urban, R = Rural"
+        )
+
+        famsize = st.selectbox(
+            "Family Size",
+            ["GT3", "LE3"],
+            help="GT3 = Greater than 3, LE3 = 3 or fewer"
+        )
+
+    with col2:
+
+        Pstatus = st.selectbox(
+            "Parent Status",
+            ["T", "A"],
+            help="T = Together, A = Apart"
+        )
+
+        Medu = st.slider(
+            "Mother Education",
+            0,
+            4,
+            3,
+            help="0 = none, 4 = higher education"
+        )
+
+        Fedu = st.slider(
+            "Father Education",
+            0,
+            4,
+            3,
+            help="0 = none, 4 = higher education"
+        )
+
+        Mjob = st.selectbox(
+            "Mother Job",
+            [
+                "teacher",
+                "health",
+                "services",
+                "at_home",
+                "other"
+            ]
+        )
+
+        Fjob = st.selectbox(
+            "Father Job",
+            [
+                "teacher",
+                "health",
+                "services",
+                "at_home",
+                "other"
+            ]
+        )
+
+    with col3:
+
+        reason = st.selectbox(
+            "Reason for Choosing School",
+            [
+                "course",
+                "home",
+                "reputation",
+                "other"
+            ]
+        )
+
+        guardian = st.selectbox(
+            "Guardian",
+            [
+                "mother",
+                "father",
+                "other"
+            ]
+        )
+
+        traveltime = st.slider(
+            "Travel Time",
+            1,
+            4,
+            1
+        )
+
+        studytime = st.slider(
+            "Study Time",
+            1,
+            4,
+            3
+        )
+
+        failures = st.slider(
+            "Previous Failures",
+            0,
+            3,
+            0
+        )
+
+
+    st.divider()
+
+
+    # ========================================================
+    # EDUCATION & SUPPORT
+    # ========================================================
+
+    st.markdown(
+        """
+        <div class="section-title">📚 Education & Support</div>
+        <div class="section-description">
+        Information about educational support and student goals
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    age = st.number_input(
-        "Age",
-        min_value=15,
-        max_value=22,
-        value=17
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        schoolsup = st.selectbox(
+            "Extra School Support",
+            ["yes", "no"]
+        )
+
+        famsup = st.selectbox(
+            "Family Support",
+            ["yes", "no"]
+        )
+
+        paid = st.selectbox(
+            "Extra Paid Classes",
+            ["yes", "no"]
+        )
+
+    with col2:
+
+        activities = st.selectbox(
+            "Extra Activities",
+            ["yes", "no"]
+        )
+
+        nursery = st.selectbox(
+            "Attended Nursery",
+            ["yes", "no"]
+        )
+
+        higher = st.selectbox(
+            "Wants Higher Education",
+            ["yes", "no"]
+        )
+
+    with col3:
+
+        internet = st.selectbox(
+            "Internet Access",
+            ["yes", "no"]
+        )
+
+        romantic = st.selectbox(
+            "Romantic Relationship",
+            ["yes", "no"]
+        )
+
+        absences = st.number_input(
+            "Absences",
+            min_value=0,
+            max_value=100,
+            value=4
+        )
+
+
+    st.divider()
+
+
+    # ========================================================
+    # LIFESTYLE
+    # ========================================================
+
+    st.markdown(
+        """
+        <div class="section-title">🌱 Lifestyle & Social Information</div>
+        <div class="section-description">
+        Lifestyle and personal factors used by the prediction model
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    address = st.selectbox(
-        "Address",
-        ["U", "R"],
-        help="U = Urban, R = Rural"
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        famrel = st.slider(
+            "Family Relationship",
+            1,
+            5,
+            4
+        )
+
+        freetime = st.slider(
+            "Free Time",
+            1,
+            5,
+            3
+        )
+
+        goout = st.slider(
+            "Going Out",
+            1,
+            5,
+            3
+        )
+
+    with col2:
+
+        Dalc = st.slider(
+            "Weekday Alcohol Consumption",
+            1,
+            5,
+            1
+        )
+
+        Walc = st.slider(
+            "Weekend Alcohol Consumption",
+            1,
+            5,
+            1
+        )
+
+        health = st.slider(
+            "Health",
+            1,
+            5,
+            4
+        )
+
+    with col3:
+
+        G1 = st.slider(
+            "First Period Grade (G1)",
+            0,
+            20,
+            14
+        )
+
+        G2 = st.slider(
+            "Second Period Grade (G2)",
+            0,
+            20,
+            15
+        )
+
+
+    st.divider()
+
+
+    # ========================================================
+    # PREDICT BUTTON
+    # ========================================================
+
+    submitted = st.form_submit_button(
+        "🚀 Predict Student Performance",
+        use_container_width=True
     )
-
-    famsize = st.selectbox(
-        "Family Size",
-        ["LE3", "GT3"],
-        help="LE3 = 3 or fewer, GT3 = greater than 3"
-    )
-
-
-with col2:
-
-    Pstatus = st.selectbox(
-        "Parent Status",
-        ["T", "A"],
-        help="T = Together, A = Apart"
-    )
-
-    Medu = st.slider(
-        "Mother's Education",
-        0,
-        4,
-        2
-    )
-
-    Fedu = st.slider(
-        "Father's Education",
-        0,
-        4,
-        2
-    )
-
-    Mjob = st.selectbox(
-        "Mother's Job",
-        [
-            "teacher",
-            "health",
-            "services",
-            "at_home",
-            "other"
-        ]
-    )
-
-    Fjob = st.selectbox(
-        "Father's Job",
-        [
-            "teacher",
-            "health",
-            "services",
-            "at_home",
-            "other"
-        ]
-    )
-
-
-with col3:
-
-    reason = st.selectbox(
-        "Reason for Choosing School",
-        [
-            "home",
-            "reputation",
-            "course",
-            "other"
-        ]
-    )
-
-    guardian = st.selectbox(
-        "Guardian",
-        [
-            "mother",
-            "father",
-            "other"
-        ]
-    )
-
-    traveltime = st.slider(
-        "Travel Time",
-        1,
-        4,
-        2
-    )
-
-    studytime = st.slider(
-        "Weekly Study Time",
-        1,
-        4,
-        2
-    )
-
-    failures = st.number_input(
-        "Previous Failures",
-        min_value=0,
-        max_value=4,
-        value=0
-    )
-
-
-# ============================================================
-# EDUCATION & SUPPORT
-# ============================================================
-
-st.divider()
-
-st.header("📚 Education & Support")
-
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    schoolsup = st.selectbox(
-        "Extra Educational Support",
-        ["yes", "no"]
-    )
-
-    famsup = st.selectbox(
-        "Family Educational Support",
-        ["yes", "no"]
-    )
-
-    paid = st.selectbox(
-        "Extra Paid Classes",
-        ["yes", "no"]
-    )
-
-
-with col2:
-
-    activities = st.selectbox(
-        "Extra-curricular Activities",
-        ["yes", "no"]
-    )
-
-    nursery = st.selectbox(
-        "Attended Nursery School",
-        ["yes", "no"]
-    )
-
-    higher = st.selectbox(
-        "Wants Higher Education",
-        ["yes", "no"]
-    )
-
-
-with col3:
-
-    internet = st.selectbox(
-        "Internet Access",
-        ["yes", "no"]
-    )
-
-    romantic = st.selectbox(
-        "Romantic Relationship",
-        ["yes", "no"]
-    )
-
-
-# ============================================================
-# LIFESTYLE & HEALTH
-# ============================================================
-
-st.divider()
-
-st.header("❤️ Lifestyle & Health")
-
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    famrel = st.slider(
-        "Family Relationship Quality",
-        1,
-        5,
-        3
-    )
-
-    freetime = st.slider(
-        "Free Time",
-        1,
-        5,
-        3
-    )
-
-
-with col2:
-
-    goout = st.slider(
-        "Going Out",
-        1,
-        5,
-        3
-    )
-
-    Dalc = st.slider(
-        "Weekday Alcohol Consumption",
-        1,
-        5,
-        1
-    )
-
-
-with col3:
-
-    Walc = st.slider(
-        "Weekend Alcohol Consumption",
-        1,
-        5,
-        1
-    )
-
-    health = st.slider(
-        "Current Health",
-        1,
-        5,
-        3
-    )
-
-    absences = st.number_input(
-        "School Absences",
-        min_value=0,
-        max_value=100,
-        value=5
-    )
-
-
-# ============================================================
-# PREDICTION BUTTON
-# ============================================================
-
-st.divider()
-
-predict_button = st.button(
-    "🔮 Predict Student Performance",
-    use_container_width=True
-)
 
 
 # ============================================================
 # PREDICTION
 # ============================================================
 
-if predict_button:
+if submitted:
 
     # --------------------------------------------------------
-    # CREATE STUDENT INPUT
+    # CREATE REQUEST DATA
     # --------------------------------------------------------
 
     student_data = {
+
         "school": school,
         "sex": sex,
         "age": age,
         "address": address,
         "famsize": famsize,
         "Pstatus": Pstatus,
+
         "Medu": Medu,
         "Fedu": Fedu,
+
         "Mjob": Mjob,
         "Fjob": Fjob,
+
         "reason": reason,
         "guardian": guardian,
+
         "traveltime": traveltime,
         "studytime": studytime,
         "failures": failures,
+
         "schoolsup": schoolsup,
         "famsup": famsup,
         "paid": paid,
+
         "activities": activities,
         "nursery": nursery,
         "higher": higher,
+
         "internet": internet,
         "romantic": romantic,
+
         "famrel": famrel,
         "freetime": freetime,
         "goout": goout,
+
         "Dalc": Dalc,
         "Walc": Walc,
+
         "health": health,
-        "absences": absences
+        "absences": absences,
+
+        "G1": G1,
+        "G2": G2
     }
 
 
     # --------------------------------------------------------
-    # CONVERT INPUT TO DATAFRAME
+    # LOADING ANIMATION
     # --------------------------------------------------------
 
-    student_df = pd.DataFrame([student_data])
+    with st.spinner("Analyzing student information..."):
 
+        try:
 
-    # --------------------------------------------------------
-    # PREDICTION
-    # --------------------------------------------------------
+            response = requests.post(
+                "http://127.0.0.1:8000/predict",
+                json=student_data,
+                timeout=30
+            )
 
-    prediction = model.predict(student_df)[0]
+            time.sleep(0.5)
 
-    prediction = max(0, min(20, prediction))
 
+            # =================================================
+            # SUCCESS
+            # =================================================
 
-    # ========================================================
-    # PERFORMANCE CATEGORY
-    # ========================================================
+            if response.status_code == 200:
 
-    if prediction >= 16:
+                result = response.json()
 
-        category = "Excellent 🌟"
+                predicted_grade = float(
+                    result.get("predicted_grade", 0)
+                )
 
-    elif prediction >= 14:
+                performance = result.get(
+                    "performance",
+                    "Unknown"
+                )
 
-        category = "Very Good 🟢"
+                risk_level = result.get(
+                    "risk_level",
+                    "Unknown"
+                )
 
-    elif prediction >= 10:
 
-        category = "Average 🟡"
+                # ------------------------------------------------
+                # NORMALIZE GRADE
+                # ------------------------------------------------
 
-    else:
+                predicted_grade = max(
+                    0,
+                    min(20, predicted_grade)
+                )
 
-        category = "Needs Improvement 🔴"
+                percentage = (
+                    predicted_grade / 20
+                ) * 100
 
 
-    # ========================================================
-    # RISK LEVEL
-    # ========================================================
+                # =================================================
+                # SUCCESS MESSAGE
+                # =================================================
 
-    if prediction >= 14:
+                st.success(
+                    "Prediction completed successfully! 🎉"
+                )
 
-        risk = "Low Risk 🟢"
 
-    elif prediction >= 10:
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        📊 Prediction Results
+                    </div>
 
-        risk = "Medium Risk 🟡"
+                    <div class="section-description">
+                        AI-generated academic performance assessment
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    else:
 
-        risk = "High Risk 🔴"
+                # =================================================
+                # RESULT CARDS
+                # =================================================
 
+                r1, r2, r3 = st.columns(3)
 
-    # ========================================================
-    # MODEL PERFORMANCE
-    # ========================================================
 
-    st.divider()
+                with r1:
 
-    st.header("📈 Model Performance")
+                    st.markdown(
+                        f"""
+                        <div class="result-card">
 
-    metric_col1, metric_col2, metric_col3 = st.columns(3)
+                            <div class="result-label">
+                                Predicted Grade
+                            </div>
 
+                            <div class="result-number">
+                                {predicted_grade:.2f}
+                                <span style="
+                                    font-size:20px;
+                                    color:#64748b;
+                                ">
+                                    / 20
+                                </span>
+                            </div>
 
-    with metric_col1:
+                            <div style="
+                                color:#64748b;
+                                margin-top:5px;
+                            ">
+                                {percentage:.1f}% estimated score
+                            </div>
+
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+
+                with r2:
 
-        st.metric(
-            "MAE",
-            f"{metrics['MAE']:.3f}"
-        )
+                    performance_lower = str(
+                        performance
+                    ).lower()
 
+                    if "good" in performance_lower:
+                        badge_bg = "#dcfce7"
+                        badge_text = "#166534"
+
+                    elif "average" in performance_lower:
+                        badge_bg = "#fef3c7"
+                        badge_text = "#92400e"
+
+                    else:
+                        badge_bg = "#fee2e2"
+                        badge_text = "#991b1b"
+
+
+                    st.markdown(
+                        f"""
+                        <div class="result-card">
+
+                            <div class="result-label">
+                                Performance
+                            </div>
 
-    with metric_col2:
+                            <div style="
+                                font-size:32px;
+                                font-weight:800;
+                                margin-top:18px;
+                            ">
+                                {performance}
+                            </div>
 
-        st.metric(
-            "RMSE",
-            f"{metrics['RMSE']:.3f}"
-        )
+                            <div class="performance-badge"
+                                style="
+                                    background:{badge_bg};
+                                    color:{badge_text};
+                                ">
+                                {performance}
+                            </div>
 
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-    with metric_col3:
+
+                with r3:
 
-        st.metric(
-            "R² Score",
-            f"{metrics['R2']:.3f}"
-        )
+                    risk_lower = str(
+                        risk_level
+                    ).lower()
 
+                    if "low" in risk_lower:
+                        risk_bg = "#dcfce7"
+                        risk_text = "#166534"
 
-    st.caption(
-        "These metrics were calculated using the held-out test dataset."
-    )
+                    elif "medium" in risk_lower:
+                        risk_bg = "#fef3c7"
+                        risk_text = "#92400e"
 
+                    else:
+                        risk_bg = "#fee2e2"
+                        risk_text = "#991b1b"
 
-    # ========================================================
-    # PREDICTION RESULT
-    # ========================================================
 
-    st.divider()
+                    st.markdown(
+                        f"""
+                        <div class="result-card">
 
-    st.header("📊 Prediction Result")
+                            <div class="result-label">
+                                Risk Level
+                            </div>
+
+                            <div style="
+                                font-size:32px;
+                                font-weight:800;
+                                margin-top:18px;
+                            ">
+                                {risk_level}
+                            </div>
 
-    result_col1, result_col2, result_col3 = st.columns(3)
+                            <div class="risk-badge"
+                                style="
+                                    background:{risk_bg};
+                                    color:{risk_text};
+                                ">
+                                {risk_level} Risk
+                            </div>
+
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
 
-    with result_col1:
+                st.write("")
 
-        st.metric(
-            "Predicted Performance",
-            f"{prediction:.2f} / 20"
-        )
+
+                # =================================================
+                # GRADE PROGRESS
+                # =================================================
 
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        📈 Academic Performance Indicator
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    with result_col2:
+                st.progress(
+                    percentage / 100
+                )
 
-        st.metric(
-            "Performance Category",
-            category
-        )
+                p1, p2, p3 = st.columns(3)
 
+                with p1:
+                    st.caption("0 — Beginning")
 
-    with result_col3:
+                with p2:
+                    st.caption("10 — Average")
 
-        st.metric(
-            "Academic Risk",
-            risk
-        )
+                with p3:
+                    st.caption("20 — Maximum")
 
 
-    # ========================================================
-    # PERFORMANCE PROGRESS
-    # ========================================================
+                # =================================================
+                # STUDENT SNAPSHOT
+                # =================================================
 
-    st.subheader("📈 Performance Level")
+                st.divider()
 
-    progress = prediction / 20
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        👤 Student Snapshot
+                    </div>
 
-    st.progress(progress)
+                    <div class="section-description">
+                        Key information used during prediction
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    st.write(
-        f"Predicted score: **{prediction:.2f} / 20**"
-    )
 
+                s1, s2, s3, s4 = st.columns(4)
 
-    # ========================================================
-    # PERSONALIZED RECOMMENDATIONS
-    # ========================================================
+                with s1:
+                    st.metric(
+                        "Age",
+                        age
+                    )
 
-    st.divider()
+                with s2:
+                    st.metric(
+                        "Study Time",
+                        f"{studytime}/4"
+                    )
 
-    st.header("💡 Personalized Recommendations")
+                with s3:
+                    st.metric(
+                        "Absences",
+                        absences
+                    )
 
-    recommendations = []
+                with s4:
+                    st.metric(
+                        "Previous Failures",
+                        failures
+                    )
 
 
-    if studytime <= 2:
+                # =================================================
+                # ACADEMIC PROFILE
+                # =================================================
 
-        recommendations.append(
-            "📚 Increase weekly study time and follow a consistent study schedule."
-        )
+                st.divider()
 
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        📚 Academic Profile
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-    if failures > 0:
+                a1, a2, a3 = st.columns(3)
 
-        recommendations.append(
-            "⚠️ Focus on subjects where you previously struggled "
-            "and consider additional academic support."
-        )
+                with a1:
 
+                    st.metric(
+                        "G1",
+                        f"{G1}/20"
+                    )
+
+                with a2:
 
-    if absences > 10:
+                    st.metric(
+                        "G2",
+                        f"{G2}/20"
+                    )
 
-        recommendations.append(
-            "🏫 Try to reduce school absences and maintain regular attendance."
-        )
+                with a3:
 
+                    st.metric(
+                        "Predicted G3",
+                        f"{predicted_grade:.2f}/20"
+                    )
 
-    if freetime >= 4:
 
-        recommendations.append(
-            "⏰ Balance free time with revision and academic activities."
-        )
+                # =================================================
+                # RECOMMENDATIONS
+                # =================================================
 
+                st.divider()
+
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        💡 Academic Recommendations
+                    </div>
 
-    if goout >= 4:
+                    <div class="section-description">
+                        General suggestions based on the entered profile
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
+                recommendations = []
+
 
-        recommendations.append(
-            "🎯 Maintain a healthy balance between social activities "
-            "and study time."
-        )
+                # Study time
+                if studytime <= 1:
+
+                    recommendations.append(
+                        (
+                            "📖 Increase Study Time",
+                            "Consider creating a consistent daily study schedule "
+                            "and gradually increasing focused study sessions."
+                        )
+                    )
+
+                elif studytime == 2:
+
+                    recommendations.append(
+                        (
+                            "📖 Maintain Regular Study",
+                            "A structured study routine with regular revision "
+                            "can help maintain academic consistency."
+                        )
+                    )
 
+                else:
+
+                    recommendations.append(
+                        (
+                            "📖 Strong Study Routine",
+                            "Continue maintaining your current study routine "
+                            "while focusing on quality and revision."
+                        )
+                    )
+
+
+                # Absences
+                if absences > 20:
+
+                    recommendations.append(
+                        (
+                            "🏫 Improve Attendance",
+                            "A high number of absences can reduce exposure "
+                            "to classroom learning. Try to maintain regular attendance."
+                        )
+                    )
 
-    if famrel <= 2:
+                elif absences > 10:
 
-        recommendations.append(
-            "❤️ A supportive family environment may help improve academic focus."
-        )
+                    recommendations.append(
+                        (
+                            "🏫 Monitor Attendance",
+                            "Keep track of attendance and avoid unnecessary "
+                            "absences where possible."
+                        )
+                    )
 
+                else:
+
+                    recommendations.append(
+                        (
+                            "🏫 Good Attendance Pattern",
+                            "The entered absence level is relatively low. "
+                            "Continue maintaining regular class participation."
+                        )
+                    )
 
-    if health <= 2:
 
-        recommendations.append(
-            "💪 Pay attention to your health, sleep and daily routine."
-        )
+                # Previous failures
+                if failures > 0:
 
+                    recommendations.append(
+                        (
+                            "🎯 Focus on Difficult Subjects",
+                            "Previous failures indicate areas where additional "
+                            "revision, practice or academic support may be useful."
+                        )
+                    )
 
-    if absences <= 5:
+                else:
 
-        recommendations.append(
-            "✅ Your attendance level is currently good. Keep maintaining it."
-        )
+                    recommendations.append(
+                        (
+                            "🎯 Maintain Consistency",
+                            "No previous failures were entered. Continue using "
+                            "regular revision and practice to maintain progress."
+                        )
+                    )
 
+
+                # G1 / G2
+                if G2 > G1:
 
-    if studytime >= 3:
+                    recommendations.append(
+                        (
+                            "📈 Positive Academic Trend",
+                            f"G2 ({G2}) is higher than G1 ({G1}). "
+                            "Continue the learning strategies that are helping improvement."
+                        )
+                    )
 
-        recommendations.append(
-            "🌟 Your study-time commitment is good. Continue maintaining consistency."
-        )
+                elif G2 < G1:
 
+                    recommendations.append(
+                        (
+                            "🔎 Review Recent Performance",
+                            f"G2 ({G2}) is lower than G1 ({G1}). "
+                            "Review recent topics and identify areas that need additional practice."
+                        )
+                    )
 
-    if not recommendations:
+                else:
 
-        recommendations.append(
-            "🌟 Your current profile looks balanced. "
-            "Continue maintaining your study habits."
-        )
+                    recommendations.append(
+                        (
+                            "📊 Stable Performance",
+                            "G1 and G2 are at the same level. "
+                            "Consistent revision can help improve future performance."
+                        )
+                    )
 
 
-    for recommendation in recommendations:
+                for title, description in recommendations:
 
-        st.markdown(
-            f"""
-            <div class="recommendation">
-                {recommendation}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+                    st.markdown(
+                        f"""
+                        <div class="recommendation">
 
+                            <div class="recommendation-title">
+                                {title}
+                            </div>
 
-    # ========================================================
-    # MODEL INSIGHTS
-    # ========================================================
+                            <div class="recommendation-text">
+                                {description}
+                            </div>
 
-    st.divider()
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-    st.header("🧠 Model Insights")
 
-    st.write(
-        "These features were considered important by the "
-        "trained Random Forest model."
-    )
+                # =================================================
+                # MODEL METRICS
+                # =================================================
 
+                st.divider()
 
-    try:
+                st.markdown(
+                    """
+                    <div class="section-title">
+                        🤖 Model Information
+                    </div>
 
-        # Get pipeline components
+                    <div class="section-description">
+                        Performance information from the trained model
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-        trained_preprocessor = model.named_steps["preprocessor"]
 
-        trained_model = model.named_steps["model"]
+                try:
 
+                    # Try common metric names
+                    mae = None
+                    rmse = None
+                    r2 = None
 
-        # Get transformed feature names
+                    if isinstance(result, dict):
 
-        feature_names = (
-            trained_preprocessor
-            .get_feature_names_out()
-        )
+                        mae = result.get("mae")
+                        rmse = result.get("rmse")
+                        r2 = result.get("r2")
 
+                    if mae is None and isinstance(
+                        result, dict
+                    ):
+                        mae = result.get("MAE")
 
-        # Get feature importance
+                    if rmse is None and isinstance(
+                        result, dict
+                    ):
+                        rmse = result.get("RMSE")
 
-        importances = (
-            trained_model
-            .feature_importances_
-        )
+                    if r2 is None and isinstance(
+                        result, dict
+                    ):
+                        r2 = result.get("R2")
 
 
-        # Create dataframe
+                    if isinstance(metrics, dict):
 
-        importance_df = pd.DataFrame(
-            {
-                "Feature": feature_names,
-                "Importance": importances
-            }
-        )
+                        if mae is None:
+                            mae = metrics.get("MAE")
 
+                        if mae is None:
+                            mae = metrics.get("mae")
 
-        # Sort by importance
+                        if rmse is None:
+                            rmse = metrics.get("RMSE")
 
-        importance_df = importance_df.sort_values(
-            by="Importance",
-            ascending=False
-        )
+                        if rmse is None:
+                            rmse = metrics.get("rmse")
 
+                        if r2 is None:
+                            r2 = metrics.get("R2")
 
-        # Top 10
+                        if r2 is None:
+                            r2 = metrics.get("r2")
 
-        top_features = importance_df.head(10)
 
+                    m1, m2, m3 = st.columns(3)
 
-        # Chart
 
-        st.subheader(
-            "📊 Top 10 Important Features"
-        )
+                    with m1:
 
-        chart_data = (
-            top_features
-            .set_index("Feature")["Importance"]
-        )
+                        if mae is not None:
 
-        st.bar_chart(chart_data)
+                            st.metric(
+                                "MAE",
+                                f"{float(mae):.2f}"
+                            )
 
+                        else:
 
-        # Table
+                            st.metric(
+                                "MAE",
+                                "Available"
+                            )
 
-        display_df = top_features.copy()
 
+                    with m2:
 
-        display_df["Importance"] = (
-            display_df["Importance"] * 100
-        ).round(2)
+                        if rmse is not None:
 
+                            st.metric(
+                                "RMSE",
+                                f"{float(rmse):.2f}"
+                            )
 
-        display_df = display_df.rename(
-            columns={
-                "Importance": "Importance (%)"
-            }
-        )
+                        else:
 
+                            st.metric(
+                                "RMSE",
+                                "Available"
+                            )
 
-        st.dataframe(
-            display_df,
-            use_container_width=True,
-            hide_index=True
-        )
 
+                    with m3:
 
-    except Exception as e:
+                        if r2 is not None:
 
-        st.warning(
-            "Model insights could not be displayed."
-        )
+                            st.metric(
+                                "R² Score",
+                                f"{float(r2):.2f}"
+                            )
 
-        st.caption(str(e))
+                        else:
 
+                            st.metric(
+                                "R² Score",
+                                "Available"
+                            )
 
-    # ========================================================
-    # DISCLAIMER
-    # ========================================================
 
-    st.divider()
+                except Exception:
 
-    st.caption(
-        "⚠️ This prediction is generated by a machine-learning "
-        "model and should be used for educational guidance only. "
-        "It is not a definitive assessment of a student's future performance."
-    )
+                    st.info(
+                        "Model prediction completed successfully."
+                    )
+
+
+                # =================================================
+                # RAW API RESPONSE
+                # =================================================
+
+                with st.expander(
+                    "🔧 View Technical Prediction Response"
+                ):
+
+                    st.json(result)
+
+
+            # =================================================
+            # API ERROR
+            # =================================================
+
+            else:
+
+                st.error(
+                    "Prediction failed."
+                )
+
+                st.code(
+                    response.text
+                )
+
+
+        # ========================================================
+        # CONNECTION ERROR
+        # ========================================================
+
+        except requests.exceptions.ConnectionError:
+
+            st.error(
+                "❌ Cannot connect to the FastAPI backend."
+            )
+
+            st.warning(
+                "Please start your FastAPI server first."
+            )
+
+            st.code(
+                "uvicorn backend.main:app --reload"
+            )
+
+
+        # ========================================================
+        # TIMEOUT
+        # ========================================================
+
+        except requests.exceptions.Timeout:
+
+            st.error(
+                "⏱️ The prediction request timed out."
+            )
+
+            st.info(
+                "Check whether the FastAPI backend and ML model are running correctly."
+            )
+
+
+        # ========================================================
+        # GENERAL ERROR
+        # ========================================================
+
+        except Exception as e:
+
+            st.error(
+                "⚠️ An unexpected error occurred."
+            )
+
+            st.exception(e)
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown(
+    """
+    <div class="footer">
+
+        AI Student Performance Predictor
+        <br>
+        Machine Learning Based Academic Performance Analysis
+        <br><br>
+        Developed as an Artificial Intelligence / Machine Learning Project
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
